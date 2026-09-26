@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Run the actual Merge upload parser/composer; optionally save cards for emulation.
-// node raw/lv-boost/test_merge.js ordinary/fpSup.BIN [fresh-output-dir] [Merge-index.html]
+// node color-modes/lv-boost/test_merge.js ordinary/fpSup.BIN [fresh-output-dir] [Merge-index.html]
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');

@@ -1,6 +1,6 @@
 # LV Boost (Live View Boost): STILL preview +1 / +2 / +3
 
-Part of the [RAW/live-view tools](../README.md), alongside [RAW View](../../releases/fpsup-raw-view-v0.2.0test/).
+Part of [Color modes](../README.md). [RAW View](../../releases/fpsup-raw-view-v0.2.0test/) remains under the RAW tools.
 
 Development module for **SIGMA fp firmware 5.02**. LV Boost adds a COLOR-menu
 row that brightens the preview at a fixed capture exposure. The v0.6.1 merge
@@ -102,13 +102,16 @@ research devkit, these are the same segments its builders use; its extracted
 | `out/MAIN_c0000000.bin` | `aaa5208a028d9c4aebb9cc8614add723d456e96b2a95914f433079954320e622` |
 | `out/seg1_c2ef6e00.bin` | `0dcaca8f5441fe4ddc6ed801cb888e325df4e76006e4f53a1c3219809b22ce7b` |
 
+Archived ZIPs retain their original documentation and checksums. Use the current
+build paths below rather than the older paths inside those archives.
+
 From the repository root, build into a fresh directory:
 
 ```sh
-python3 raw/lv-boost/build/build_lv_boost.py --out /tmp/lv-boost-ordinary
-python3 raw/lv-boost/test_lv_boost.py -v
-node raw/lv-boost/test_merge.js /tmp/lv-boost-ordinary/fpSup.BIN /tmp/lv-boost-matrix
-python3 raw/lv-boost/verify_card.py /tmp/lv-boost-ordinary /tmp/lv-boost-matrix/lv-*
+python3 color-modes/lv-boost/build/build_lv_boost.py --out /tmp/lv-boost-ordinary
+python3 color-modes/lv-boost/test_lv_boost.py -v
+node color-modes/lv-boost/test_merge.js /tmp/lv-boost-ordinary/fpSup.BIN /tmp/lv-boost-matrix
+python3 color-modes/lv-boost/verify_card.py /tmp/lv-boost-ordinary /tmp/lv-boost-matrix/lv-*
 ```
 
 `--default-level 1|2|3` selects the first-use/fallback level (default: 2); a valid
@@ -164,7 +167,7 @@ experimental allocation for fp 5.02 and needs camera power-cycle validation.
 With an already connected USB shell, read diagnostics without changing settings:
 
 ```sh
-python3 raw/lv-boost/read_diagnostics.py --out /path/to/diagnostics.json
+python3 color-modes/lv-boost/read_diagnostics.py --out /path/to/diagnostics.json
 ```
 
 `startup_state`: 0 waiting, 1 applied, 2 manual menu override, 3 applying,

@@ -213,8 +213,10 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--default-level', type=int, choices=(1, 2, 3), default=2,
                     help='First-use LV Boost level; saved settings take precedence (default: +2)')
-    ap.add_argument('--fs2', action='store_true', help='Enable Fast Start 2')
-    ap.add_argument('--no-shell', action='store_true', help='Omit the diagnostic USB shell')
+    ap.add_argument('--fs2', action='store_true', help='Standalone development card only; never upload to Merge')
+    shell = ap.add_mutually_exclusive_group()
+    shell.add_argument('--shell', action='store_true', help='Standalone diagnostic card only; add Shell in Merge instead')
+    shell.add_argument('--no-shell', action='store_true', help=argparse.SUPPRESS)
     ap.add_argument('--out', type=pathlib.Path, required=True)
     a = ap.parse_args()
     blob, info = build_blob(True, a.default_level)
@@ -227,7 +229,7 @@ def main():
         cmd = [sys.executable, str(SHELL / 'build_autorun.py'), '--loader',
                '--banner', 'fpSup-DEV-LV-BOOST!', '--boot-bin', f'{bf}:0',
                '--out', str(a.out / 'AutoRun.txt'),
-               '--no-shell' if a.no_shell else '--no-ep-patches']
+               '--no-ep-patches' if a.shell else '--no-shell']
         if a.fs2:
             cmd += ['--store-boot', '--loader-hook', '--four-box-bar',
                     '--loader-hook-mark', '0xC072E040']

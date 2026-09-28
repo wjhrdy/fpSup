@@ -27,6 +27,9 @@ products you want on one card and get `AutoRun.txt` and `fpSup.BIN`. Merged card
 produced here and nowhere else, and every combination is checked against the same
 rules the build scripts use. Runs in the browser — no toolchain, no camera.
 
+**[Custom modes](custom-modes/)** — Indoor: a saved P preset with 60 Hz lighting
+compensation, installable through fpSup-Merge BIN upload (experimental).
+
 ### Releases
 
 Two files each — copy `AutoRun.txt` and the payload container to the root of

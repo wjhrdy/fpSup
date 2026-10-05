@@ -2,11 +2,11 @@
 
 **SIGMA fp firmware 5.02.** A saved stills P preset named **Indoor60** or **Indoor50** immediately
 selects the camera's native frequency-specific compensation program, without waiting for
-flicker detection. With a non-electronic manual lens, a white **BANDING RISK**
-label on a red background warns when the native selected shutter becomes too
-fast for the compensation target.
+flicker detection. A white **BANDING RISK** label on a red background warns whenever the native
+selected shutter becomes too fast for the compensation target, with any lens.
+This includes controlled-aperture lenses that cannot stop down far enough.
 
-[Download Indoor 0.4.0 for fpSup-Merge](Indoor-v0.4.0-Merge-Sigma-fp-5.02.zip).
+[Download Indoor 0.4.1 for fpSup-Merge](Indoor-v0.4.1-Merge-Sigma-fp-5.02.zip).
 This is an ordinary merge input containing **only Indoor**. USB Shell, LV Boost
 and Fast Start 2 are not bundled; select them separately in Merge if wanted.
 It uses the existing BIN-upload workflow rather than a built-in catalogue tile.
@@ -29,7 +29,7 @@ conflict, especially with other uploaded mods.
 
 Use one of these exact full preset names (case-insensitive):
 
-| Full name | Forced native compensation | Manual-lens warning above |
+| Full name | Forced native compensation | Warning above |
 |---|---|---|
 | **Indoor60** | 60 Hz | 1/120 internal timing (Tv 7073) |
 | **Indoor50** | 50 Hz | 1/100 internal timing (Tv 6803) |
@@ -63,16 +63,13 @@ The warning compares the selected mode's internal target rather than a UI label.
 **BANDING RISK** appears during STILL live view when:
 
 - Indoor is active in P with no program shift;
-- the native aperture driver is NoLensIris, as with an ordinary non-electronic
-  manual lens;
 - the native selected shutter is faster than the selected mode's compensation
   target (1/120 for 60 Hz, 1/100 for 50 Hz).
 
-It clears when the shutter slows to that target or below, an electronic
-aperture driver is selected, or Indoor/live-view eligibility ends. The warning
+It clears when the shutter slows to that target or below, or Indoor/live-view
+eligibility ends. Lens type and manual-focus status do not suppress it. The warning
 is a timing-risk indication, not measured bands. It does not classify slower
-off-cycle exposures or adapters reporting electronic iris control despite a
-manual aperture. Absence of a warning does not guarantee flicker-free images;
+off-cycle exposures. Absence of a warning does not guarantee flicker-free images;
 arbitrary LED PWM can require different timing.
 
 ## Build and verification
@@ -95,7 +92,7 @@ See [VERIFICATION.md](VERIFICATION.md) and SHA256SUMS for exact artifact hashes
 and offline results. The ZIP includes its card-file hashes and manifest.
 
 The user reported the original 60 Hz Indoor/manual-lens warning behavior
-working on camera. The new 50 Hz mode has offline validation only. The corrected red-background palette and this exact standalone merge
+working on camera. The new 50 Hz mode and controlled-aperture warning have offline validation only. The corrected red-background palette and this exact standalone merge
 package are checked offline and have not been separately hardware-validated.
 OS/file/heap/cache/lock services are mocked; composition checks for other mods
 do not execute all of those mods' resident code. Photo capture and repeated
@@ -108,8 +105,9 @@ saved custom-slot name using native DialMode/name property accessors. Eligible
 Indoor60/Indoor returns 2 and Indoor50 returns 1; other modes tail into the displaced stock getter. Native
 program model generation and interpolation remain unchanged.
 
-The display hook at **0xC052884C** reads native selected Tv at **0xC3202C78** and
-the iris-driver selector at **0xC347B1D4**, independently of manual-focus status.
+The display hook at **0xC052884C** reads native selected Tv at **0xC3202C78**.
+It warns whenever that timing exceeds the active compensation target, without
+checking lens type or requiring a separate aperture-limit flag.
 It makes no lens-driver calls, property-lock calls or exposure writes in the
 draw thread. The native simple-font bitmap is inverted: zero bits form white
 glyphs (palette 1), one bits form the red background (palette 3). The fixed

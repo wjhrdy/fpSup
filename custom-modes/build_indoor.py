@@ -46,10 +46,10 @@ def build(out, fast=False):
     r = subprocess.run(cmd, check=True, capture_output=True, text=True)
     (out/'build.log').write_text(r.stdout+r.stderr)
     assert (out/'fpSup.BIN').stat().st_size <= 0xF000
-    manifest = dict(version='0.4.0', firmware='fp 5.02', main_sha256=ROM_HASH,
+    manifest = dict(version='0.4.1', firmware='fp 5.02', main_sha256=ROM_HASH,
                     activation='custom P preset Indoor/Indoor60 (60 Hz) or Indoor50 (50 Hz); STILL, no program shift',
                     policy='effective flicker classification 1/2 from name; native exposure code unchanged',
-                    warning='BANDING RISK in Indoor STILL P live-view, NoLensIris selector 0 and selected Tv > 7073 (60 Hz 1/120) or > 6803 (50 Hz 1/100)',
+                    warning='BANDING RISK in Indoor STILL P live-view, any lens and selected Tv > 7073 (60 Hz 1/120) or > 6803 (50 Hz 1/100)',
                     hardware_tested=False, fast=fast, symbols=syms,
                     sha256={p.name:hashlib.sha256(p.read_bytes()).hexdigest()
                             for p in out.iterdir() if p.name in ('AutoRun.txt','fpSup.BIN')})

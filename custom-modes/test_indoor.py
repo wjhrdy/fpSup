@@ -77,6 +77,8 @@ def verify(out, fast=False, warm=False):
     c.preset();assert c.getter()==2
     c.preset(name=b'Outdoor');assert c.getter()==1
 
+    c.call(0xc052b310,0xc37830d0,sp=STACK-0x2000)
+    c.put(0xc3033a44,2);c.put(0xc3033a54,1)
     c.put(0xc3202ab4,0xc0915cdc)
     ctx=HEAP+0x190000
     for autoiso in (True,False):
@@ -95,6 +97,14 @@ def verify(out, fast=False, warm=False):
             c.mu.reg_write(UC_ARM_REG_R2,TUPLE)
             c.call(0xc0226508,16000,TABLE,sp=STACK-0x2000)
             assert c.word(TUPLE+8)>7073  # bright native shutter freedom retained
+            if hz:
+                # Native bright-scene exposure after aperture/ISO constraints:
+                # a controlled lens must warn too, using the native selected Tv.
+                c.put(0xc347b1d4,1);c.put(0xc3202c78,c.word(TUPLE+8))
+                assert Prototype.draw_frame(c,HEAP+0x200000,publish=False)==bytes((0,1,0,0))
+                assert bytes(c.mu.mem_read(HEAP+0x200000+64*1024+400,192))==bytes([3])*192
+                c.put(0xc3202c78,6803 if hz==1 else 7073)
+                assert Prototype.draw_frame(c,HEAP+0x200000,publish=False)==bytes((0,1,0,0))
     for name,threshold in ((b'Indoor',7073),(b'Indoor60',7073),(b'Indoor50',6803)):
         verify_warning(c,name,threshold)
     obj=c.registered[0][0];c.call(c.word(obj+4),obj,4)
@@ -105,11 +115,6 @@ def verify(out, fast=False, warm=False):
 
 def verify_warning(c,name,threshold):
     # Real font and ARM draw hook; run after staging was freed.
-    # Real native aperture capability chain: NoLensIris selector 0 returns false.
-    c.put(0xc3498d78,0xc3464850);c.put(0xc3464850,0xc0b8da14)
-    c.put(0xc347b264,0xc0b91338);c.put(0xc347b1d4,0)
-    ret,sp=c.call(0xc0362108,sp=STACK-0x2000)
-    assert ret==0 and sp==STACK-0x2000
     c.call(0xc052b310,0xc37830d0,sp=STACK-0x2000)
     c.preset(name=name);c.fixture(state=0,publish=False);assert c.getter()==(1 if threshold==6803 else 2)
     c.put(0xc3033a44,2);c.put(0xc3033a54,1)
@@ -126,7 +131,7 @@ def verify_warning(c,name,threshold):
                 expected[(64+y)*1024+400+i*16+x]=3 if glyph[y*2+x//8] & (128>>(x%8)) else 1
     draw=lambda pixels,**kw: Prototype.draw_frame(c,pixels,publish=False,**kw)
     for tv,selector,risk in ((threshold,0,False),(threshold-1024,0,False),(threshold+1,0,True),
-                             (8192,0,True),(8192,1,False),(8192,2,False)):
+                             (8192,0,True),(8192,1,True),(8192,2,True),(threshold,1,False),(threshold,2,False)):
         c.put(0xc347b1d4,selector);c.put(0xc3202c78,tv)
         for pixels in frames:
             c.mu.mem_write(pixels,bytes([7])*(1024*128))

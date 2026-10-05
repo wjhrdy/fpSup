@@ -200,8 +200,8 @@ indoor_name:
 
 /* Reuse the native OSD renderer; warning concerns fast-shutter risk, not
  * measured bands. Native exposure selection and all camera settings unchanged.
- * ponytail: only NoLensIris (ordinary non-electronic manual lenses); adapter
- * capability and slower off-cycle exposures need separate verified traces.
+ * ponytail: fast-shutter risk only; slower off-cycle exposures need a
+ * separately verified timing policy.
  */
 draw:
     push {r0-r12, lr}
@@ -278,12 +278,8 @@ draw:
     bl match_name
     cmp r0, r11 @ suppress stale classification during a name change
     bne label_state
-    @ Native iris driver selector: 0 = NoLensIris (no electronic aperture).
-    @ Read only; no driver calls, property locks or initializers in OSD task.
-    LDA r1, 0xC347B1D4
-    ldr r1, [r1]
-    cmp r1, #0
-    bne label_state
+    @ Warn on actual selected timing, regardless of lens aperture control.
+    @ Native AE may exceed the target when aperture/ISO limits are exhausted.
     @ Displayed native selected Tv (APEX x1024), refreshed by C021EF88.
     @ Native target: 7073 = 1/120 (60 Hz); 6803 = 1/100 (50 Hz).
     LDA r1, 0xC3202C78

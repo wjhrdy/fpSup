@@ -6,7 +6,7 @@ flicker detection. A white **BANDING RISK** label on a red background warns when
 selected shutter becomes too fast for the compensation target, with any lens.
 This includes controlled-aperture lenses that cannot stop down far enough.
 
-[Download Indoor 0.4.1 for fpSup-Merge](Indoor-v0.4.1-Merge-Sigma-fp-5.02.zip).
+[Download Indoor 0.4.2 for fpSup-Merge](Indoor-v0.4.2-Merge-Sigma-fp-5.02.zip).
 This is an ordinary merge input containing **only Indoor**. USB Shell, LV Boost
 and Fast Start 2 are not bundled; select them separately in Merge if wanted.
 It uses the existing BIN-upload workflow rather than a built-in catalogue tile.
@@ -31,9 +31,9 @@ Use one of these exact full preset names (case-insensitive):
 
 | Full name | Forced native compensation | Warning above |
 |---|---|---|
-| **Indoor60** | 60 Hz | 1/120 internal timing (Tv 7073) |
-| **Indoor50** | 50 Hz | 1/100 internal timing (Tv 6803) |
-| **Indoor** | 60 Hz, retained for compatibility | 1/120 internal timing |
+| **Indoor60** | 60 Hz | displayed 1/125 (Tv > 7315) |
+| **Indoor50** | 50 Hz | displayed 1/100 (Tv > 6967) |
+| **Indoor** | 60 Hz, retained for compatibility | displayed 1/125 |
 
 In STILL, select **P**, choose your preferred settings, and save to any C1–C6
 slot through **SYSTEM → Custom Mode Setting**. On the Mode selection screen,
@@ -58,15 +58,18 @@ The 60 Hz mode commonly settles near the reported displayed **1/125** with
 aperture control.
 The native internal compensation target is approximately **1/120** (Tv=7073,
 APEX ×1024) for 60 Hz. The 50 Hz target is approximately **1/100** (Tv=6803).
-The warning compares the selected mode's internal target rather than a UI label.
+The warning follows the native displayed-speed rounding: it stays off throughout
+the displayed 1/125 range in 60 Hz mode and the 1/100 range in 50 Hz mode.
+The stock formatter at `0xC0228D48` rounds against the table at `0xC09125B4`;
+1/160 starts at Tv=7316 and 1/125 starts at Tv=6968 (APEX ×1024).
 
 **BANDING RISK** appears during STILL live view when:
 
 - Indoor is active in P with no program shift;
-- the native selected shutter is faster than the selected mode's compensation
-  target (1/120 for 60 Hz, 1/100 for 50 Hz).
+- the native selected shutter rounds to a displayed speed faster than
+  1/125 for 60 Hz or 1/100 for 50 Hz.
 
-It clears when the shutter slows to that target or below, or Indoor/live-view
+It clears when the displayed shutter slows to that limit or below, or Indoor/live-view
 eligibility ends. Lens type and manual-focus status do not suppress it. The warning
 is a timing-risk indication, not measured bands. It does not classify slower
 off-cycle exposures. Absence of a warning does not guarantee flicker-free images;

@@ -281,12 +281,13 @@ draw:
     @ Warn on actual selected timing, regardless of lens aperture control.
     @ Native AE may exceed the target when aperture/ISO limits are exhausted.
     @ Displayed native selected Tv (APEX x1024), refreshed by C021EF88.
-    @ Native target: 7073 = 1/120 (60 Hz); 6803 = 1/100 (50 Hz).
+    @ Match native displayed-speed rounding (C0228D48, C09125B4).
+    @ Last 1/125 Tv is 7315; last 1/100 Tv is 6967.
     LDA r1, 0xC3202C78
     ldr r1, [r1]
-    movw r2, #7073
+    movw r2, #7315
     cmp r11, #1
-    movweq r2, #6803
+    movweq r2, #6967
     cmp r1, r2
     movgt r9, #1
 label_state:

@@ -121,9 +121,7 @@ resident:
     bl indoor_selected
     cmp r0, #0
     beq stock
-    mov r0, #1
-    str r0, [r5]
-    mov r0, #2
+    str r0, [r5] @ retain native classification: 1=50 Hz, 2=60 Hz
     mov sp, r8
     pop {r4-r8, pc}
 stock:
@@ -155,23 +153,46 @@ indoor_selected:
     blx ip
     adr r1, name_watch
     str r0, [r1]
-    adr r1, indoor_name
-indoor_compare:
-    ldrb r2, [r1], #1
-    ldrb r3, [r0], #1
-    cmp r2, #0
-    beq indoor_end
-    orr r3, r3, #0x20 @ ASCII case folding for "indoor"
-    cmp r2, r3
-    beq indoor_compare
+    bl match_name
+    pop {r4-r6, pc}
 indoor_no:
     mov r0, #0
     pop {r4-r6, pc}
-indoor_end:
-    cmp r3, #0
+/* Pure string parser, shared with the OSD thread. No property/driver calls.
+ * Exact case-insensitive Indoor (legacy 60), Indoor60, or Indoor50 only.
+ */
+match_name:
+    adr r1, indoor_name
+name_compare:
+    ldrb r2, [r1], #1
+    ldrb r3, [r0], #1
+    cmp r2, #0
+    beq name_suffix
+    orr r3, r3, #0x20
+    cmp r2, r3
+    beq name_compare
+name_no:
     mov r0, #0
-    moveq r0, #1
-    pop {r4-r6, pc}
+    bx lr
+name_suffix:
+    cmp r3, #0
+    moveq r0, #2
+    bxeq lr
+    mov r2, #2
+    cmp r3, #'6'
+    beq name_digits
+    cmp r3, #'5'
+    bne name_no
+    mov r2, #1
+name_digits:
+    ldrb r3, [r0], #1
+    cmp r3, #'0'
+    bne name_no
+    ldrb r3, [r0]
+    cmp r3, #0
+    bne name_no
+    mov r0, r2
+    bx lr
 indoor_name:
     .asciz "indoor"
     .balign 4
@@ -241,7 +262,10 @@ draw:
     adr r1, active
     ldr r1, [r1]
     cmp r1, #1
-    bne label_state
+    blo label_state
+    cmp r1, #2
+    bhi label_state
+    mov r11, r1
     adr r1, dial_watch
     ldm r1, {r2,r3}
     cmp r2, #0
@@ -250,19 +274,9 @@ draw:
     cmp r1, r3
     bne label_state
     adr r1, name_watch
-    ldr r2, [r1]
-    adr r1, indoor_name
-warning_name:
-    ldrb r3, [r1], #1
-    ldrb r12, [r2], #1
-    cmp r3, #0
-    beq warning_name_end
-    orr r12, r12, #0x20
-    cmp r3, r12
-    bne label_state
-    b warning_name
-warning_name_end:
-    cmp r12, #0
+    ldr r0, [r1]
+    bl match_name
+    cmp r0, r11 @ suppress stale classification during a name change
     bne label_state
     @ Native iris driver selector: 0 = NoLensIris (no electronic aperture).
     @ Read only; no driver calls, property locks or initializers in OSD task.
@@ -271,10 +285,12 @@ warning_name_end:
     cmp r1, #0
     bne label_state
     @ Displayed native selected Tv (APEX x1024), refreshed by C021EF88.
-    @ 7073 is native 1/120 timing, commonly displayed as 1/125.
+    @ Native target: 7073 = 1/120 (60 Hz); 6803 = 1/100 (50 Hz).
     LDA r1, 0xC3202C78
     ldr r1, [r1]
     movw r2, #7073
+    cmp r11, #1
+    movweq r2, #6803
     cmp r1, r2
     movgt r9, #1
 label_state:

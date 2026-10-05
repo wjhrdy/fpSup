@@ -103,9 +103,16 @@ def verify(out, fast=False, warm=False):
                 c.put(0xc347b1d4,1);c.put(0xc3202c78,c.word(TUPLE+8))
                 assert Prototype.draw_frame(c,HEAP+0x200000,publish=False)==bytes((0,1,0,0))
                 assert bytes(c.mu.mem_read(HEAP+0x200000+64*1024+400,192))==bytes([3])*192
-                c.put(0xc3202c78,6803 if hz==1 else 7073)
+                c.put(0xc3202c78,6967 if hz==1 else 7315)
                 assert Prototype.draw_frame(c,HEAP+0x200000,publish=False)==bytes((0,1,0,0))
-    for name,threshold in ((b'Indoor',7073),(b'Indoor60',7073),(b'Indoor50',6803)):
+    # Execute the stock UI rational formatter, including both rounding edges.
+    c.put(0xc320284c,0xc0913078)  # stock singleton initial value; OS guard mocked
+    rational=HEAP+0x1b0000
+    for tv,denominator in ((7073,125),(7133,125),(7168,125),(7315,125),
+                           (7316,160),(6803,100),(6967,100),(6968,125)):
+        c.call(0xc0228d48,rational,tv,sp=STACK-0x2000)
+        assert (c.word(rational),c.word(rational+4))==(1,denominator)
+    for name,threshold in ((b'Indoor',7315),(b'Indoor60',7315),(b'Indoor50',6967)):
         verify_warning(c,name,threshold)
     obj=c.registered[0][0];c.call(c.word(obj+4),obj,4)
     for site,word in {**STOCK,GETTER:0xe92d4010}.items():assert c.word(site)==word
@@ -116,7 +123,7 @@ def verify(out, fast=False, warm=False):
 def verify_warning(c,name,threshold):
     # Real font and ARM draw hook; run after staging was freed.
     c.call(0xc052b310,0xc37830d0,sp=STACK-0x2000)
-    c.preset(name=name);c.fixture(state=0,publish=False);assert c.getter()==(1 if threshold==6803 else 2)
+    c.preset(name=name);c.fixture(state=0,publish=False);assert c.getter()==(1 if threshold==6967 else 2)
     c.put(0xc3033a44,2);c.put(0xc3033a54,1)
     frames=[HEAP+0x200000+i*0x20000 for i in range(3)]
     expected=bytearray([7])*(1024*128)
@@ -130,7 +137,9 @@ def verify_warning(c,name,threshold):
             for x in range(16):
                 expected[(64+y)*1024+400+i*16+x]=3 if glyph[y*2+x//8] & (128>>(x%8)) else 1
     draw=lambda pixels,**kw: Prototype.draw_frame(c,pixels,publish=False,**kw)
-    for tv,selector,risk in ((threshold,0,False),(threshold-1024,0,False),(threshold+1,0,True),
+    for tv,selector,risk in ((7073 if threshold==7315 else 6803,0,False),
+                             (7133 if threshold==7315 else 6803,1,False),
+                             (7168 if threshold==7315 else 6803,2,False),(threshold,0,False),(threshold-1024,0,False),(threshold+1,0,True),
                              (8192,0,True),(8192,1,True),(8192,2,True),(threshold,1,False),(threshold,2,False)):
         c.put(0xc347b1d4,selector);c.put(0xc3202c78,tv)
         for pixels in frames:

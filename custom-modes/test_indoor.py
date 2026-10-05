@@ -55,18 +55,22 @@ def verify(out, fast=False, warm=False):
     for site,word in STOCK.items():
         if site==DRAW_SITE:assert c.word(site)!=word
         else:assert c.word(site)==word
-    for bank in (0,1):
-        for second in (False,True):
-            for dial in range(10):
-                c.preset(dial,bank=bank,second_dial=second)
-                c.fixture(state=1,publish=False)
-                assert c.getter()==(2 if dial>=4 else 1)
-    for name,on in ((b'Indoor',True),(b'INDOOR',True),(b'indoor',True),
-                    (b'Outdoor',False),(b'IndoorX',False),(b'',False)):
+    for name,hz in ((b'Indoor',2),(b'Indoor60',2),(b'Indoor50',1)):
+        for bank in (0,1):
+            for second in (False,True):
+                for dial in range(10):
+                    c.preset(dial,name=name,bank=bank,second_dial=second)
+                    c.fixture(state=0,publish=False)
+                    assert c.getter()==(hz if dial>=4 else 0)
+        for opts in ({'mode':1},{'mode':3},{'mode':4},{'cine':1},{'shift':1}):
+            c.preset(name=name);c.fixture(state=0,publish=False,**opts);assert c.getter()==0
+    for name,hz in ((b'Indoor',2),(b'INDOOR',2),(b'indoor',2),
+                    (b'INDOOR60',2),(b'InDoOr50',1),(b'indoor50',1),
+                    (b'Outdoor',0),(b'IndoorX',0),(b'',0),(b'Indoor5',0),
+                    (b'Indoor6',0),(b'Indoor50X',0),(b'Indoor60 ',0),
+                    (b'Indoor 50',0),(b'Indoor500',0),(b'Indoor00',0)):
         c.preset(name=name);c.fixture(state=0,publish=False)
-        assert c.getter()==(2 if on else 0)
-    for opts in ({'mode':1},{'mode':3},{'mode':4},{'cine':1},{'shift':1}):
-        c.preset();c.fixture(state=1,publish=False,**opts);assert c.getter()==1
+        assert c.getter()==hz,name
     c.fixture(state=0,publish=False);c.put(0xc31caa80,0);assert c.getter()==0
     # Leaving Indoor respects pre-existing native override as well as cached result.
     c.preset(name=b'Outdoor');c.put(0xc32006fc,1,1);assert c.getter()==1
@@ -76,13 +80,13 @@ def verify(out, fast=False, warm=False):
     c.put(0xc3202ab4,0xc0915cdc)
     ctx=HEAP+0x190000
     for autoiso in (True,False):
-        for on in (False,True):
-            c.preset(name=b'Indoor' if on else b'Outdoor')
+        for name,hz in ((b'Outdoor',0),(b'Indoor',2),(b'Indoor60',2),(b'Indoor50',1)):
+            c.preset(name=name)
             c.fixture(state=0,publish=False,autoiso=autoiso)
             c.put(0xc3202cc0,0 if autoiso else 400)
             c.mu.mem_write(ctx,bytes(236));c.put(ctx+0x24,2)
             model,sp=c.call(0xc0220300,ctx,LIMITS,sp=STACK-0x2000)
-            assert c.word(model)==((0x6c if autoiso else 0x7a) if on else 0x65)
+            assert c.word(model)==({0:0x65,1:0x6b,2:0x6c} if autoiso else {0:0x65,1:0x79,2:0x7a})[hz]
             c.mu.mem_write(MODEL,bytes(c.mu.mem_read(model,64)));c.put(MODEL+0x18,0,18)
             c.mu.reg_write(UC_ARM_REG_R2,RANGES)
             ret,sp=c.call(0xc0224e70,LIMITS,TABLE,sp=STACK-0x2000)
@@ -91,14 +95,15 @@ def verify(out, fast=False, warm=False):
             c.mu.reg_write(UC_ARM_REG_R2,TUPLE)
             c.call(0xc0226508,16000,TABLE,sp=STACK-0x2000)
             assert c.word(TUPLE+8)>7073  # bright native shutter freedom retained
-    verify_warning(c)
+    for name,threshold in ((b'Indoor',7073),(b'Indoor60',7073),(b'Indoor50',6803)):
+        verify_warning(c,name,threshold)
     obj=c.registered[0][0];c.call(c.word(obj+4),obj,4)
     for site,word in {**STOCK,GETTER:0xe92d4010}.items():assert c.word(site)==word
     c.preset();c.fixture(state=1,publish=False);assert c.getter()==1
     print('PASS',out,'warm',warm)
 
 
-def verify_warning(c):
+def verify_warning(c,name,threshold):
     # Real font and ARM draw hook; run after staging was freed.
     # Real native aperture capability chain: NoLensIris selector 0 returns false.
     c.put(0xc3498d78,0xc3464850);c.put(0xc3464850,0xc0b8da14)
@@ -106,7 +111,7 @@ def verify_warning(c):
     ret,sp=c.call(0xc0362108,sp=STACK-0x2000)
     assert ret==0 and sp==STACK-0x2000
     c.call(0xc052b310,0xc37830d0,sp=STACK-0x2000)
-    c.preset();c.fixture(state=0,publish=False);assert c.getter()==2
+    c.preset(name=name);c.fixture(state=0,publish=False);assert c.getter()==(1 if threshold==6803 else 2)
     c.put(0xc3033a44,2);c.put(0xc3033a54,1)
     frames=[HEAP+0x200000+i*0x20000 for i in range(3)]
     expected=bytearray([7])*(1024*128)
@@ -120,7 +125,7 @@ def verify_warning(c):
             for x in range(16):
                 expected[(64+y)*1024+400+i*16+x]=3 if glyph[y*2+x//8] & (128>>(x%8)) else 1
     draw=lambda pixels,**kw: Prototype.draw_frame(c,pixels,publish=False,**kw)
-    for tv,selector,risk in ((7073,0,False),(6049,0,False),(7074,0,True),
+    for tv,selector,risk in ((threshold,0,False),(threshold-1024,0,False),(threshold+1,0,True),
                              (8192,0,True),(8192,1,False),(8192,2,False)):
         c.put(0xc347b1d4,selector);c.put(0xc3202c78,tv)
         for pixels in frames:
@@ -128,7 +133,7 @@ def verify_warning(c):
             assert draw(pixels)==(b'\0\1\0\0' if risk else bytes(4))
             assert bytes(c.mu.mem_read(pixels,1024*128))==(expected if risk else bytes([7])*(1024*128))
         if risk:
-            c.put(0xc3202c78,7073)
+            c.put(0xc3202c78,threshold)
             for pixels in reversed(frames):
                 assert draw(pixels)==b'\0\1\0\0'
                 for y in range(64,96):assert bytes(c.mu.mem_read(pixels+y*1024+400,192))==bytes(192)
@@ -142,13 +147,20 @@ def verify_warning(c):
     # Leaving the dial must clear without waiting for another flicker getter.
     c.preset(dial=3);assert draw(frames[0])==bytes(4)
     c.getter();assert draw(frames[0])==bytes(4)
-    c.preset();c.getter();assert draw(frames[0])==b'\0\1\0\0'
+    c.preset(name=name);c.getter();assert draw(frames[0])==b'\0\1\0\0'
     c.preset(name=b'Outdoor');assert draw(frames[0])==b'\0\1\0\0'
     c.getter();assert draw(frames[0])==bytes(4)
-    c.preset();c.getter();
+    c.preset(name=name);c.getter();
     for addr,value in ((0xc3033a44,5),(0xc3033a54,2)):
         c.put(addr,value);assert draw(frames[0])==bytes(4)
         c.put(0xc3033a44,2);c.put(0xc3033a54,1)
+    c.put(0xc3202c78,7000)
+    for selected,risk in ((b'Indoor60',False),(b'Indoor50',True),(b'Indoor60',False)):
+        c.preset(name=selected)
+        # No stale warning may be drawn before the native getter refreshes.
+        draw(frames[0])
+        c.getter();draw(frames[0])
+        assert bytes(c.mu.mem_read(frames[0]+64*1024+400,192))==(bytes([3])*192 if risk else bytes(192))
     print('PASS native pixels, manual/controlled aperture, threshold, 3-buffer clearing, mode/dial gates, registers/flags')
 
 

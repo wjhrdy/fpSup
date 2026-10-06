@@ -100,10 +100,10 @@ def verify(out, fast=False, warm=False):
             if hz:
                 # Native bright-scene exposure after aperture/ISO constraints:
                 # a controlled lens must warn too, using the native selected Tv.
-                c.put(0xc347b1d4,1);c.put(0xc3202c78,c.word(TUPLE+8))
+                c.put(0xc347b1d4,1);c.put(0xc3202c9c,c.word(TUPLE+8))
                 assert Prototype.draw_frame(c,HEAP+0x200000,publish=False)==bytes((0,1,0,0))
                 assert bytes(c.mu.mem_read(HEAP+0x200000+64*1024+400,192))==bytes([3])*192
-                c.put(0xc3202c78,6967 if hz==1 else 7315)
+                c.put(0xc3202c9c,6967 if hz==1 else 7315)
                 assert Prototype.draw_frame(c,HEAP+0x200000,publish=False)==bytes((0,1,0,0))
     # Execute the stock UI rational formatter, including both rounding edges.
     c.put(0xc320284c,0xc0913078)  # stock singleton initial value; OS guard mocked
@@ -137,22 +137,30 @@ def verify_warning(c,name,threshold):
             for x in range(16):
                 expected[(64+y)*1024+400+i*16+x]=3 if glyph[y*2+x//8] & (128>>(x%8)) else 1
     draw=lambda pixels,**kw: Prototype.draw_frame(c,pixels,publish=False,**kw)
+    # The STILL label uses its own tuple, independently of the other AE tuple.
+    c.put(0xc3202c78,8192);c.put(0xc3202c9c,threshold)
+    assert draw(frames[0])==bytes(4), 'Warning followed non-display AE tuple'
+    c.put(0xc3202c78,6803);c.put(0xc3202c9c,8192)
+    assert draw(frames[0])==b'\0\1\0\0'
+    c.put(0xc3202c9c,threshold)
+    assert draw(frames[0])==b'\0\1\0\0'
+
     for tv,selector,risk in ((7073 if threshold==7315 else 6803,0,False),
                              (7133 if threshold==7315 else 6803,1,False),
                              (7168 if threshold==7315 else 6803,2,False),(threshold,0,False),(threshold-1024,0,False),(threshold+1,0,True),
                              (8192,0,True),(8192,1,True),(8192,2,True),(threshold,1,False),(threshold,2,False)):
-        c.put(0xc347b1d4,selector);c.put(0xc3202c78,tv)
+        c.put(0xc347b1d4,selector);c.put(0xc3202c9c,tv)
         for pixels in frames:
             c.mu.mem_write(pixels,bytes([7])*(1024*128))
             assert draw(pixels)==(b'\0\1\0\0' if risk else bytes(4))
             assert bytes(c.mu.mem_read(pixels,1024*128))==(expected if risk else bytes([7])*(1024*128))
         if risk:
-            c.put(0xc3202c78,threshold)
+            c.put(0xc3202c9c,threshold)
             for pixels in reversed(frames):
                 assert draw(pixels)==b'\0\1\0\0'
                 for y in range(64,96):assert bytes(c.mu.mem_read(pixels+y*1024+400,192))==bytes(192)
                 assert draw(pixels)==bytes(4)
-    c.put(0xc347b1d4,0);c.put(0xc3202c78,8192)
+    c.put(0xc347b1d4,0);c.put(0xc3202c9c,8192)
     for kw in ({'mode':3},{'cine':1},{'group':0},{'fmt':4},{'width':591},{'height':95}):
         assert draw(frames[0],**kw)==bytes(4),kw
     c.fixture(state=0,publish=False);c.put(0xc3202d00,1)
@@ -168,7 +176,7 @@ def verify_warning(c,name,threshold):
     for addr,value in ((0xc3033a44,5),(0xc3033a54,2)):
         c.put(addr,value);assert draw(frames[0])==bytes(4)
         c.put(0xc3033a44,2);c.put(0xc3033a54,1)
-    c.put(0xc3202c78,7000)
+    c.put(0xc3202c9c,7000)
     for selected,risk in ((b'Indoor60',False),(b'Indoor50',True),(b'Indoor60',False)):
         c.preset(name=selected)
         # No stale warning may be drawn before the native getter refreshes.

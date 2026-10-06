@@ -280,10 +280,11 @@ draw:
     bne label_state
     @ Warn on actual selected timing, regardless of lens aperture control.
     @ Native AE may exceed the target when aperture/ISO limits are exhausted.
-    @ Displayed native selected Tv (APEX x1024), refreshed by C021EF88.
+    @ STILL UI reads C3202C94+8 via C0217570(0), C02175D8.
+    @ C3202C78 is the other AE tuple and may differ from the display.
     @ Match native displayed-speed rounding (C0228D48, C09125B4).
     @ Last 1/125 Tv is 7315; last 1/100 Tv is 6967.
-    LDA r1, 0xC3202C78
+    LDA r1, 0xC3202C9C
     ldr r1, [r1]
     movw r2, #7315
     cmp r11, #1

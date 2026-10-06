@@ -6,7 +6,7 @@ flicker detection. A white **BANDING RISK** label on a red background warns when
 selected shutter becomes too fast for the compensation target, with any lens.
 This includes controlled-aperture lenses that cannot stop down far enough.
 
-[Download Indoor 0.4.2 for fpSup-Merge](Indoor-v0.4.2-Merge-Sigma-fp-5.02.zip).
+[Download Indoor 0.4.3 for fpSup-Merge](Indoor-v0.4.3-Merge-Sigma-fp-5.02.zip).
 This is an ordinary merge input containing **only Indoor**. USB Shell, LV Boost
 and Fast Start 2 are not bundled; select them separately in Merge if wanted.
 It uses the existing BIN-upload workflow rather than a built-in catalogue tile.
@@ -108,8 +108,12 @@ saved custom-slot name using native DialMode/name property accessors. Eligible
 Indoor60/Indoor returns 2 and Indoor50 returns 1; other modes tail into the displaced stock getter. Native
 program model generation and interpolation remain unchanged.
 
-The display hook at **0xC052884C** reads native selected Tv at **0xC3202C78**.
-It warns whenever that timing exceeds the active compensation target, without
+The STILL UI selects the tuple at `0xC3202C94` through `0xC0217570(0)`;
+its shutter formatter reads Tv at offset +8 (`0xC3202C9C`). The other AE
+tuple at `0xC3202C70` can differ and is no longer used for the warning.
+
+The display hook at **0xC052884C** reads native selected Tv at **0xC3202C9C**.
+It warns whenever that timing rounds faster than the displayed shutter limit, without
 checking lens type or requiring a separate aperture-limit flag.
 It makes no lens-driver calls, property-lock calls or exposure writes in the
 draw thread. The native simple-font bitmap is inverted: zero bits form white

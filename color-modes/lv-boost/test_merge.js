@@ -37,6 +37,7 @@ for (const r of card.recs) {
 }
 assert.equal(card.entry, sourceOffset, 'entry must point directly to the position-independent launcher');
 const autos = new Map(), report = [];
+let rejected = 0;
 if (process.argv[3]) fs.mkdirSync(process.argv[3]); // refuse to overwrite previous evidence
 for (let mask = 0; mask < 2 ** CAT.cards.length; mask++) {
   const cards = CAT.cards.filter((_, i) => mask & (1 << i));
@@ -45,6 +46,13 @@ for (let mask = 0; mask < 2 ** CAT.cards.length; mask++) {
   for (const fast of [false, true]) for (const push of ids.includes('shell') ? [false, true] : [false]) {
     const label = ['lv', ...ids, fast ? 'fast' : 'ordinary', ...(push ? ['ep83'] : [])].join('-');
     const {c, bin, bad, auto} = ctx.api.run(card, ids, fast, push);
+    if (bin.used > CAT.cap_patch.max) {
+      assert(bad.some(x => x.t === 'The loader can read the whole card'), label);
+      assert(bad.every(x => ['The loader can read the whole card',
+        'Data past the loader read keeps its place'].includes(x.t)), JSON.stringify(bad));
+      rejected++;
+      continue; // expected rejection of combinations beyond the loader ceiling
+    }
     assert.equal(bad.length, 0, label + ': ' + JSON.stringify(bad));
     // Independently locate unchanged launcher bytes in the emitted container.
     const output = Buffer.from(bin.bytes), count = output.readUInt32LE(4);
@@ -62,10 +70,11 @@ for (let mask = 0; mask < 2 ** CAT.cards.length; mask++) {
       assert.equal(output.readUInt32LE(table + 4 * c.entries.length), entry);
       assert.equal(output.readUInt32LE(table + 4 * (c.entries.length + 1)), 0);
     } else assert.equal(output.readUInt32LE(8), entry);
-    const mode = `${fast}/${ids.includes('shell')}/${push}`;
+    // Upstream may raise the loader read capacity for larger selections.
+    const mode = `${fast}/${ids.includes('shell')}/${push}/${bin.cap}`;
     if (autos.has(mode)) assert(auto === autos.get(mode), 'payload selection changed AutoRun');
     else autos.set(mode, auto);
-    report.push({label, ids, fast, push, used:bin.used, entries:Array.from(c.entries)});
+    report.push({label, ids, fast, push, used:bin.used, cap:bin.cap, entries:Array.from(c.entries)});
     if (process.argv[3]) {
       const dest = path.join(process.argv[3], label);
       fs.mkdirSync(dest);
@@ -80,4 +89,4 @@ for (let mask = 0; mask < 2 ** CAT.cards.length; mask++) {
   }
 }
 if (process.argv[3]) fs.writeFileSync(path.join(process.argv[3], 'matrix.json'), JSON.stringify(report, null, 2) + '\n');
-console.log(`PASS ${report.length} Merge combinations; maximum ${Math.max(...report.map(r => r.used))}/${CAT.read_cap} bytes`);
+console.log(`PASS ${report.length} Merge combinations; ${rejected} oversized combinations correctly rejected; maximum ${Math.max(...report.map(r => r.used))}/${CAT.cap_patch.max} bytes`);

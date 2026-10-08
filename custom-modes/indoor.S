@@ -6,9 +6,15 @@
     movw \reg, #:lower16:\value
     movt \reg, #:upper16:\value
 .endm
+.macro REL reg, target
+    movw \reg, #:lower16:(\target-99f-8)
+    movt \reg, #:upper16:(\target-99f-8)
+99: add \reg, pc, \reg
+.endm
 .equ SITE, 0xC0210118
 .equ NATIVE, 0xC0224E70
-.equ DRAW_SITE, 0xC052884C
+.equ DRAW_SITE, 0xC05288E4
+.equ CLEAR_SITE, 0xC052884C
 .equ RESULT_SITE, 0xC02100E4
 /* Run in staging; only the resident portion survives the entry's return. */
 entry:
@@ -27,6 +33,11 @@ entry:
     cmp r0, r1
     bne done
     LDA r0, DRAW_SITE
+    ldr r0, [r0]
+    LDA r1, 0xE2855001
+    cmp r0, r1
+    bne done
+    LDA r0, CLEAR_SITE
     ldr r0, [r0]
     LDA r1, 0xE1A03000
     cmp r0, r1
@@ -64,10 +75,14 @@ copy:
     str r0, [r5]
     str r7, [r5, #4]
     str r0, [r5, #8]
-    movw r1, #:lower16:(draw-resident)
+    movw r1, #:lower16:(clear-resident)
     add r1, r7, r1
     str r1, [r5, #12]
-    add r0, r5, #16
+    str r0, [r5, #16]
+    movw r1, #:lower16:(draw-resident)
+    add r1, r7, r1
+    str r1, [r5, #20]
+    add r0, r5, #24
     str r0, [r6]
     LDA ip, 0xC000E91C
     blx ip
@@ -79,8 +94,16 @@ copy:
     bic r0, r0, #0xFF000000
     orr r0, r0, #0xEA000000
     str r0, [r4]
-    LDA r4, DRAW_SITE
+    LDA r4, CLEAR_SITE
     add r0, r5, #8
+    sub r0, r0, r4
+    sub r0, r0, #8
+    asr r0, r0, #2
+    bic r0, r0, #0xFF000000
+    orr r0, r0, #0xEB000000
+    str r0, [r4]
+    LDA r4, DRAW_SITE
+    add r0, r5, #16
     sub r0, r0, r4
     sub r0, r0, #8
     asr r0, r0, #2
@@ -103,7 +126,7 @@ resident:
     mov r8, sp
     bic sp, sp, #7
     mov r4, r0
-    adr r5, active
+    REL r5, active
     mov r0, #0
     str r0, [r5]
     LDA r0, 0xC3202CF0
@@ -141,7 +164,7 @@ indoor_selected:
     mov r0, #0
     LDA ip, 0xC00B4BE8 @ raw DialMode property pointer
     blx ip
-    adr r1, dial_watch
+    REL r1, dial_watch
     str r0, [r1]
     ldr r0, [r0]
     str r0, [r1, #4]
@@ -151,7 +174,7 @@ indoor_selected:
     mov r1, r4
     LDA ip, 0xC00B7EB0 @ saved long name for explicit slot 0..5
     blx ip
-    adr r1, name_watch
+    REL r1, name_watch
     str r0, [r1]
     bl match_name
     pop {r4-r6, pc}
@@ -198,19 +221,88 @@ indoor_name:
     .balign 4
 .balign 4
 
-/* Reuse the native OSD renderer; warning concerns fast-shutter risk, not
+/* After the native group observers: full GUI redraws must not erase the label.
+ * Reuse the native OSD renderer; warning concerns fast-shutter risk, not
  * measured bands. Native exposure selection and all camera settings unchanged.
  * ponytail: fast-shutter risk only; slower off-cycle exposures need a
  * separately verified timing policy.
  */
+clear:
+    /* Erase only our previous label BEFORE native GUI observers paint menus
+     * or controls. Drawing/clearing after observers would punch holes in them. */
+    push {r0-r8, lr}
+    mrs r4, APSR
+    mov r8, sp
+    cmp r5, #3                 @ visible GUI group; group 1 never submits a frame
+    bne clear_return
+    cmp r0, #0
+    beq clear_return
+    ldr r1, [r0]
+    cmp r1, #3
+    bne clear_return
+    ldr r6, [r0, #4]
+    cmp r6, #0
+    beq clear_return
+    ldr r1, [r0, #8]
+    cmp r1, #0
+    beq clear_return
+    ldr r7, [r1]
+    movw r2, #592
+    cmp r7, r2
+    blo clear_return
+    cmp r7, #4096
+    bhi clear_return
+    ldr r2, [r1, #4]
+    cmp r2, #96
+    blo clear_return
+    cmp r2, #4096
+    bhi clear_return
+    REL r0, painted
+    mov r1, #3
+clear_find:
+    ldr r2, [r0]
+    cmp r2, r6
+    beq clear_found
+    add r0, r0, #4
+    subs r1, r1, #1
+    bne clear_find
+    b clear_return
+clear_found:
+    mov r1, #0
+    str r1, [r0]
+    add r0, r6, r7, lsl #6
+    add r0, r0, #400
+    mov r2, #32
+clear_row:
+    mov r3, #192
+clear_pixel:
+    strb r1, [r0], #1
+    subs r3, r3, #1
+    bne clear_pixel
+    add r0, r0, r7
+    sub r0, r0, #192
+    subs r2, r2, #1
+    bne clear_row
+    mov r0, #1
+    strb r0, [r8, #67]         @ saved 40 + original sp+0x18+group3
+clear_return:
+    msr APSR_nzcvq, r4
+    mov sp, r8
+    pop {r0-r8, lr}
+    mov r3, r0                 @ displaced descriptor move
+    bx lr
 draw:
     push {r0-r12, lr}
     mrs r4, APSR
     mov r8, sp
     bic sp, sp, #7
     sub sp, sp, #48
-    cmp r5, #1
+    cmp r5, #3
     bne draw_return
+    ldrb r1, [r8, #87]         @ original sp+0x1c+group3: group was processed
+    cmp r1, #0
+    beq draw_return
+    ldr r0, [r8, #88]          @ original sp+0x20: live group descriptor
     cmp r0, #0
     beq draw_return
     ldr r1, [r0]               @ native descriptor: format, pixels, dimensions
@@ -259,21 +351,21 @@ draw:
     ldr r1, [r1]
     cmp r1, #0
     bne label_state
-    adr r1, active
+    REL r1, active
     ldr r1, [r1]
     cmp r1, #1
     blo label_state
     cmp r1, #2
     bhi label_state
     mov r11, r1
-    adr r1, dial_watch
+    REL r1, dial_watch
     ldm r1, {r2,r3}
     cmp r2, #0
     beq label_state
     ldr r1, [r2]
     cmp r1, r3
     bne label_state
-    adr r1, name_watch
+    REL r1, name_watch
     ldr r0, [r1]
     bl match_name
     cmp r0, r11 @ suppress stale classification during a name change
@@ -292,7 +384,9 @@ draw:
     cmp r1, r2
     movgt r9, #1
 label_state:
-    adr r10, painted
+    cmp r9, #0
+    beq draw_return
+    REL r10, painted
     mov r11, #3
 find_buffer:
     ldr r1, [r10]
@@ -301,9 +395,7 @@ find_buffer:
     add r10, r10, #4
     subs r11, r11, #1
     bne find_buffer
-    cmp r9, #0
-    beq draw_return            @ never erase a surface we have not marked
-    adr r10, painted
+    REL r10, painted
     mov r11, #3
 find_empty:
     ldr r1, [r10]
@@ -312,27 +404,10 @@ find_empty:
     add r10, r10, #4
     subs r11, r11, #1
     bne find_empty
-    adr r10, painted          @ native surface set changed; forget one old address
+    REL r10, painted          @ native surface set changed; forget one old address
 have_buffer:
-    mov r1, #0
-    str r1, [r10]
-    add r0, r6, r7, lsl #6
-    add r0, r0, #400
-    mov r2, #32
-clear_row:
-    mov r3, #192
-clear_pixel:
-    strb r1, [r0], #1
-    subs r3, r3, #1
-    bne clear_pixel
-    add r0, r0, r7
-    sub r0, r0, #192
-    subs r2, r2, #1
-    bne clear_row
     mov r0, #1
-    strb r0, [r8, #81]         @ original sp+0x18+group1: compositor dirty flag
-    cmp r9, #0
-    beq draw_return
+    strb r0, [r8, #83]         @ original sp+0x18+group3: compositor dirty flag
     str r6, [r10]
     mov r0, #400
     mov r1, #64
@@ -349,14 +424,14 @@ clear_pixel:
     add r0, sp, #8
     mov r1, #0                 @ native simple font
     add r2, sp, #24
-    adr r3, label
+    REL r3, label
     LDA ip, 0xC0529CB8
     blx ip
 draw_return:
     msr APSR_nzcvq, r4
     mov sp, r8
     pop {r0-r12, lr}
-    mov r3, r0                 @ displaced instruction
+    add r5, r5, #1             @ displaced group increment; flags unchanged
     bx lr
 .align 2
 label: .asciz "BANDING RISK"

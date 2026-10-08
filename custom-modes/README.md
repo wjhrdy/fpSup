@@ -126,3 +126,11 @@ Stock-word sections let the shared loader journal and restore both runtime
 hooks and clean up the older Indoor/BF experimental hooks. No new persistent
 setting, detector-state write, task or private loader is added. Optional Fast
 Start 2 retains the shared loader's existing persistent-settings behavior.
+
+## 0.4.5 warning visibility fix
+
+The banding warning now uses the native group-3 frame submission, so it is
+visible while Indoor compensation runs. It was confirmed on camera. The
+thresholds and native Indoor50/Indoor60 compensation are unchanged. Download
+`Indoor-v0.4.5-Merge-Sigma-fp-5.02.zip` from the Focus Inset combined release,
+and use that release’s updated Merge HTML when combining it with other mods.

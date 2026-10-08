@@ -76,8 +76,9 @@ def build(extra=(), hook=True):
 
 
 class Camera:
-    def __init__(self, loader, binfile, have_file=True):
+    def __init__(self, loader, binfile, have_file=True, journal_failure=None):
         self.bin, self.have_file = binfile, have_file
+        self.journal_failure = journal_failure
         self.stock = IMAGE.read_bytes()
         mu = self.mu = Uc(UC_ARCH_ARM, UC_MODE_ARM)
         mu.mem_map(0xC0000000, 0x03000000)
@@ -122,6 +123,10 @@ class Camera:
             return
         self.calls.append(name)
         r0, r1, r2 = (self.r(x) for x in (UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2))
+        if ((name == 'MEM_HEAP' and self.journal_failure == 'heap') or
+            (name == 'MEM_GET' and self.journal_failure == 'allocation') or
+            (name == 'POFF_ADD' and self.journal_failure == ('forced' if r2 else 'ordinary'))):
+            return self._ret(0)
         if name == 'AR_START':
             self.ar_started = (r0, r1, self.r(UC_ARM_REG_LR))
             mu.emu_stop()
@@ -286,6 +291,22 @@ class LoaderHookTests(unittest.TestCase):
         r0, _ = cam.call(CAVE_LOW, r0=0, r1=0)
         self.assertEqual(r0, 1)
         self.assertNotEqual(cam.word(SITE), SITE_ORIG)
+
+    def test_journal_failure_places_nothing_and_calls_no_entry(self):
+        for failure in ('heap', 'allocation', 'ordinary', 'forced'):
+            with self.subTest(failure=failure):
+                cam = Camera(self.loader, self.bin, journal_failure=failure)
+                want = self.fw_sections(cam)
+                self.assertTrue(want)
+                r0, sp = cam.call(CAVE_LOW, sp=STACK - 0x1000)
+                self.assertEqual((r0, sp), (1, STACK - 0x1000))
+                self.assertNotIn('ENTRY', cam.calls)
+                self.assertIn('H_FREE', cam.calls)
+                self.assertEqual(cam.word(SITE), SITE_ORIG)
+                self.assertEqual(cam.draws, [])
+                for address, size in want:
+                    self.assertEqual(bytes(cam.mu.mem_read(address, size)),
+                        cam.stock[address - 0xC0000000:address - 0xC0000000 + size],hex(address))
 
 
 @unittest.skipIf(Uc is None or not IMAGE.exists(), 'needs unicorn and the image')

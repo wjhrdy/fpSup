@@ -109,6 +109,8 @@ stage2:
     mov     r9, #0
     mov     r10, #0
     bl      lh_setup
+    cmp     r9, #0
+    beq     .Ls2_return
 #endif
     mov     r8, #1                      @ pass 1: firmware destinations
     bl      s2_pass
@@ -328,6 +330,7 @@ stage2:
     bl      s2_publish
 1:
 #endif
+.Ls2_return:
     mov     r0, #0
     pop     {r4, r5, r6, r7, r8, r9, r10, pc}
 
@@ -525,6 +528,8 @@ lh_setup:
     movw    r3, #:lower16:POFF_ADD
     movt    r3, #:upper16:POFF_ADD
     blx     r3
+    cmp     r0, #0
+    beq     9f
     mov     r9, r4                      @ registered: the hook may be armed
 
 9:  mov     sp, r5

@@ -71,3 +71,12 @@ composition, not every peer mod's resident behavior. The user previously
 reported 60 Hz Indoor/manual-lens warning behavior working; the new 50 Hz mode, all-lens warning,
 display-rounding fix and this exact standalone upload have offline
 validation only. No camera or card operation was performed for this PR update.
+
+## 0.4.5 update
+
+The warning now marks group 3 dirty after native draw, matching the group
+that the stock submit path actually flips. Group 1 never submits a frame.
+Native thresholds/model selection stay unchanged. The native complete OSD
+loop verified visible warning pixels on all three submitted GUI buffers,
+threshold clearing and menu integrity. The user confirmed the warning visible
+on camera. Exact combined card checks are in `../focus-inset/VERIFICATION.md`.

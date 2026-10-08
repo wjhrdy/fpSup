@@ -9,6 +9,21 @@ Selecting OFF or a native color preset saves LV Boost as disabled; the next
 boot leaves the native color choice alone. A manual menu selection cancels a
 pending startup restore.
 
+For **LV Boost alone with Fast Start 3**, download the
+[v0.6.1 Fast Start 3 test ZIP](LV-Boost-v0.6.1-FastStart3-Sigma-fp-5.02.zip)
+([SHA-256](LV-Boost-v0.6.1-FastStart3-Sigma-fp-5.02.zip.sha256)).
+It includes `AutoRun.txt`, `fpSup.BIN`, all five `FPSUPUI` assets, installation
+instructions and checksums; no USB Shell or other Sups. Replace the complete
+startup file set together. Its LV Boost payload is byte-identical to the
+ordinary v0.6.1 Merge input, with +2 as the first-use default. The existing
+builder's `--fs2` flag enables Fast Start 3 with the current shared loader and
+its default AutoRun acceleration; see the ZIP's README for reproduction.
+The exact card passed ordinary, stored-bootstrap and warm-hook emulation, plus
+16 LV Boost and 29 shared loader checks. Physical camera validation remains
+pending. Fast Start stores loader bytes in persistent settings; LV Boost also
+retains its saved preference. Removing the battery or deleting card files does
+not clear those values. This standalone Fast ZIP is **not a Merge input**.
+
 [Download the v0.6.1 merge candidate](LV-Boost-v0.6.1-Merge-Sigma-fp-5.02.zip).
 It contains an ordinary card with **no Fast Start 2 and no bundled USB shell**.
 It is deliberately outside the release catalogue pending maintainer review and

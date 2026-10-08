@@ -1,0 +1,2 @@
+en: Indoor, LV Boost and Focus Inset together with Fast Start 3; fp firmware 5.02. Test build.
+zh: SIGMA fp 5.02 測試版：手動鏡頭對焦放大視窗。

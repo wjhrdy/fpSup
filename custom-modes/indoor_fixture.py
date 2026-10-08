@@ -120,7 +120,7 @@ class Prototype(Camera):
         assert [self.r(UC_ARM_REG_R4+i) for i in range(8)] == saved
         return result
 
-    def draw_frame(self, pixels, state=2, mode=2, cine=0, group=1,
+    def draw_frame(self, pixels, state=2, mode=2, cine=0, group=3,
                    fmt=3, width=1024, height=128, sp=STACK-0x3004, publish=True):
         desc, dims = HEAP+0x1a0000, HEAP+0x1a0010
         self.put(desc, fmt, pixels, dims)
@@ -131,6 +131,10 @@ class Prototype(Camera):
         if publish:
             self.complete_detection(state)
         self.put(sp+0x18, 0)
+        self.put(sp+0x1c, 1 << (8*group))
+        self.put(sp+0x20, desc)
+        self.mu.reg_write(UC_ARM_REG_R5, group)
+        self.call(0xc052884c, desc, lr=0xc0528850, sp=sp)
         for i in range(13):
             self.mu.reg_write(UC_ARM_REG_R0+i, 0xabc000+i)
         self.mu.reg_write(UC_ARM_REG_R5, group)
@@ -139,8 +143,8 @@ class Prototype(Camera):
         _, endsp = self.call(DRAW_SITE, desc, 0xabc001, lr=DRAW_SITE+4, sp=sp)
         assert self.r(UC_ARM_REG_PC) == DRAW_SITE+4 and endsp == sp
         want = [0xabc000+i for i in range(13)]
-        want[0] = want[3] = desc  # stock displaced mov r3,r0
-        want[5] = group
+        want[0] = desc
+        want[5] = group+1  # stock displaced add r5,r5,#1
         assert [self.r(UC_ARM_REG_R0+i) for i in range(13)] == want
         assert self.r(UC_ARM_REG_CPSR) & 0xf8000000 == flags & 0xf8000000
         return bytes(self.mu.mem_read(sp+0x18, 4))

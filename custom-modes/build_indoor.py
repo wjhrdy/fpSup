@@ -15,9 +15,9 @@ SHELL = REPO / 'fp_usb_shell'
 sys.path.insert(0, str(SHELL))
 from armasm import assemble, symbols
 ROM_HASH = 'aaa5208a028d9c4aebb9cc8614add723d456e96b2a95914f433079954320e622'
-SITE, DRAW_SITE = 0xC021EE94, 0xC052884C
+SITE, DRAW_SITE = 0xC021EE94, 0xC05288E4
 SCAN_SITE, RESULT_SITE = 0xC0209DF0, 0xC02100E4
-STOCK = {SITE:0xEB0017F5, DRAW_SITE:0xE1A03000, SCAN_SITE:0xEBFFFE2A,
+STOCK = {SITE:0xEB0017F5, DRAW_SITE:0xE2855001, 0xC052884C:0xE1A03000, SCAN_SITE:0xEBFFFE2A,
          RESULT_SITE:0xEB000173, 0xC0226508:0xE92D4DF0}
 
 GETTER = 0xc0210118
@@ -46,7 +46,7 @@ def build(out, fast=False):
     r = subprocess.run(cmd, check=True, capture_output=True, text=True)
     (out/'build.log').write_text(r.stdout+r.stderr)
     assert (out/'fpSup.BIN').stat().st_size <= 0xF000
-    manifest = dict(version='0.4.3', firmware='fp 5.02', main_sha256=ROM_HASH,
+    manifest = dict(version='0.4.5', firmware='fp 5.02', main_sha256=ROM_HASH,
                     activation='custom P preset Indoor/Indoor60 (60 Hz) or Indoor50 (50 Hz); STILL, no program shift',
                     policy='effective flicker classification 1/2 from name; native exposure code unchanged',
                     warning='BANDING RISK in Indoor STILL P live-view, any lens and STILL display Tv > 7315 (60 Hz displayed 1/125) or > 6967 (50 Hz displayed 1/100)',

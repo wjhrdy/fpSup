@@ -40,8 +40,11 @@ card, use the composer rather than copying both.
 | product | version | what it does |
 |---|---|---|
 <!-- releases:begin:en -->
+| [`fpsup-focus-inset`](releases/fpsup-focus-inset-v0.1.0test/) | v0.1.0test | Small always-visible manual-lens focus inset in STILL live view; fp firmware 5.02. Test build. |
 | [`fpsup-gyro`](releases/fpsup-gyro-v1.14.1test/) | v1.14.1test | Writes Gyroflow .gcsv motion and .json lens files while recording CinemaDNG. This test build needs on-camera audio sync validation. |
 | [`fpsup-gyro-base`](releases/fpsup-gyro-base-v1.14.0/) | v1.14.0 | Writes the gyro and accelerometer as a raw .GYR in the root of the disk the take went to — every sample, nothing on the camera but the stream — converted afterwards in a browser. Same code as fpGyroSup v1.14.0. |
+| [`fpsup-indoor-lvboost`](releases/fpsup-indoor-lvboost-v1.3.0test/) | v1.3.0test | Indoor, LV Boost and Focus Inset together with Fast Start 3; fp firmware 5.02. Test build. |
+| [`fpsup-indoor-lvboost-debug`](releases/fpsup-indoor-lvboost-debug-v1.3.0test/) | v1.3.0test | Indoor, LV Boost and Focus Inset with Fast Start 3 and USB debugging; fp firmware 5.02. Test build. |
 | [`fpsup-lossless`](releases/fpsup-lossless-v0.1.3test/) | v0.1.3test | Lossless-compressed CinemaDNG, by the camera's own hardware codec: a Lossless RAW row (SHOOT page 2, CINE) turns it on; frames the codec cannot finish in time are written uncompressed, and compressed clips play back in the camera. Test build. |
 | [`fpsup-og2k`](releases/fpsup-og2k-v0.1.5a/) | v0.1.5a | The same open gate at 2016×1344, on the sensor's quiet readout at every frame rate. 98 MB/s at 24p 12-bit, 8.3 ms rolling shutter. Test build. |
 | [`fpsup-og3k`](releases/fpsup-og3k-v0.2.8a/) | v0.2.8a | The sensor's whole 3:2 area at 3024×2010, eight frame rates from 23.976 to 100, native UI in Settings and Quick Set. 221 MB/s at 24p 12-bit — this needs an external SSD, not an SD card. Alpha. |
@@ -148,8 +151,11 @@ Each page says what has been proven, what is being worked on, and what is open.
 | 產品 | 版本 | 做什麼 |
 |---|---|---|
 <!-- releases:begin:zh -->
+| [`fpsup-focus-inset`](releases/fpsup-focus-inset-v0.1.0test/) | v0.1.0test | SIGMA fp 5.02 測試版：手動鏡頭對焦放大視窗。 |
 | [`fpsup-gyro`](releases/fpsup-gyro-v1.14.1test/) | v1.14.1test | 錄製 CinemaDNG 時寫出 Gyroflow 的 .gcsv 運動紀錄與 .json 鏡頭檔。此測試版的聲畫同步仍待實機驗證。 |
 | [`fpsup-gyro-base`](releases/fpsup-gyro-base-v1.14.0/) | v1.14.0 | 在錄影那顆磁碟的根目錄寫一個原始 .GYR(陀螺儀與加速度計每個樣本都在),機上只做串流,事後在瀏覽器轉換。與 fpGyroSup v1.14.0 同一份程式。 |
+| [`fpsup-indoor-lvboost`](releases/fpsup-indoor-lvboost-v1.3.0test/) | v1.3.0test | SIGMA fp 5.02 測試版：手動鏡頭對焦放大視窗。 |
+| [`fpsup-indoor-lvboost-debug`](releases/fpsup-indoor-lvboost-debug-v1.3.0test/) | v1.3.0test | SIGMA fp 5.02 測試版：手動鏡頭對焦放大視窗。 |
 | [`fpsup-lossless`](releases/fpsup-lossless-v0.1.3test/) | v0.1.3test | 用相機自己的硬體編碼器錄無損壓縮 CinemaDNG:SHOOT 第 2 頁(CINE)多一列 Lossless RAW 開關;來不及壓的畫格照原樣寫入未壓縮,壓縮過的片段可在機內回放。測試版。 |
 | [`fpsup-og2k`](releases/fpsup-og2k-v0.1.5a/) | v0.1.5a | 同樣的 open gate,2016×1344,每個幀率都走感光元件的安靜讀出。24p 12-bit 為 98 MB/s,捲簾 8.3 ms。測試版。 |
 | [`fpsup-og3k`](releases/fpsup-og3k-v0.2.8a/) | v0.2.8a | 感光元件完整的 3:2 面積,3024×2010,八個幀率從 23.976 到 100,Settings 與 QS 有原生 UI。24p 12-bit 為 221 MB/s ——這個碼率要外接 SSD,SD 卡不夠。Alpha。 |

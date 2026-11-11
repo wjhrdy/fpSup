@@ -53,7 +53,7 @@ def verify(out, fast=False, warm=False):
     c.mu.mem_write(HEAP,bytes(0x20000))  # staging freed; resident still works
     assert c.word(GETTER)!=0xe92d4010
     for site,word in STOCK.items():
-        if site==DRAW_SITE:assert c.word(site)!=word
+        if site in (DRAW_SITE,0xc052884c):assert c.word(site)!=word
         else:assert c.word(site)==word
     for name,hz in ((b'Indoor',2),(b'Indoor60',2),(b'Indoor50',1)):
         for bank in (0,1):
@@ -101,10 +101,10 @@ def verify(out, fast=False, warm=False):
                 # Native bright-scene exposure after aperture/ISO constraints:
                 # a controlled lens must warn too, using the native selected Tv.
                 c.put(0xc347b1d4,1);c.put(0xc3202c9c,c.word(TUPLE+8))
-                assert Prototype.draw_frame(c,HEAP+0x200000,publish=False)==bytes((0,1,0,0))
+                assert Prototype.draw_frame(c,HEAP+0x200000,publish=False)==bytes((0,0,0,1))
                 assert bytes(c.mu.mem_read(HEAP+0x200000+64*1024+400,192))==bytes([3])*192
                 c.put(0xc3202c9c,6967 if hz==1 else 7315)
-                assert Prototype.draw_frame(c,HEAP+0x200000,publish=False)==bytes((0,1,0,0))
+                assert Prototype.draw_frame(c,HEAP+0x200000,publish=False)==bytes((0,0,0,1))
     # Execute the stock UI rational formatter, including both rounding edges.
     c.put(0xc320284c,0xc0913078)  # stock singleton initial value; OS guard mocked
     rational=HEAP+0x1b0000
@@ -141,9 +141,9 @@ def verify_warning(c,name,threshold):
     c.put(0xc3202c78,8192);c.put(0xc3202c9c,threshold)
     assert draw(frames[0])==bytes(4), 'Warning followed non-display AE tuple'
     c.put(0xc3202c78,6803);c.put(0xc3202c9c,8192)
-    assert draw(frames[0])==b'\0\1\0\0'
+    assert draw(frames[0])==b'\0\0\0\1'
     c.put(0xc3202c9c,threshold)
-    assert draw(frames[0])==b'\0\1\0\0'
+    assert draw(frames[0])==b'\0\0\0\1'
 
     for tv,selector,risk in ((7073 if threshold==7315 else 6803,0,False),
                              (7133 if threshold==7315 else 6803,1,False),
@@ -152,16 +152,16 @@ def verify_warning(c,name,threshold):
         c.put(0xc347b1d4,selector);c.put(0xc3202c9c,tv)
         for pixels in frames:
             c.mu.mem_write(pixels,bytes([7])*(1024*128))
-            assert draw(pixels)==(b'\0\1\0\0' if risk else bytes(4))
+            assert draw(pixels)==(b'\0\0\0\1' if risk else bytes(4))
             assert bytes(c.mu.mem_read(pixels,1024*128))==(expected if risk else bytes([7])*(1024*128))
         if risk:
             c.put(0xc3202c9c,threshold)
             for pixels in reversed(frames):
-                assert draw(pixels)==b'\0\1\0\0'
+                assert draw(pixels)==b'\0\0\0\1'
                 for y in range(64,96):assert bytes(c.mu.mem_read(pixels+y*1024+400,192))==bytes(192)
                 assert draw(pixels)==bytes(4)
     c.put(0xc347b1d4,0);c.put(0xc3202c9c,8192)
-    for kw in ({'mode':3},{'cine':1},{'group':0},{'fmt':4},{'width':591},{'height':95}):
+    for kw in ({'mode':3},{'cine':1},{'group':0},{'group':1},{'fmt':4},{'width':591},{'height':95}):
         assert draw(frames[0],**kw)==bytes(4),kw
     c.fixture(state=0,publish=False);c.put(0xc3202d00,1)
     assert draw(frames[0])==bytes(4)
@@ -169,8 +169,8 @@ def verify_warning(c,name,threshold):
     # Leaving the dial must clear without waiting for another flicker getter.
     c.preset(dial=3);assert draw(frames[0])==bytes(4)
     c.getter();assert draw(frames[0])==bytes(4)
-    c.preset(name=name);c.getter();assert draw(frames[0])==b'\0\1\0\0'
-    c.preset(name=b'Outdoor');assert draw(frames[0])==b'\0\1\0\0'
+    c.preset(name=name);c.getter();assert draw(frames[0])==b'\0\0\0\1'
+    c.preset(name=b'Outdoor');assert draw(frames[0])==b'\0\0\0\1'
     c.getter();assert draw(frames[0])==bytes(4)
     c.preset(name=name);c.getter();
     for addr,value in ((0xc3033a44,5),(0xc3033a54,2)):
@@ -193,7 +193,7 @@ def main():
         fast,m=build(tmp/'fast',fast=True)
         for out,warm in ((ordinary,False),(fast,False),(fast,True)):verify(out,out==fast,warm)
         c=TestCamera(ordinary);c.fail_alloc=True;c.boot()
-        assert c.word(GETTER)==0xe92d4010 and c.word(DRAW_SITE)==0xe1a03000, 'Failed allocation armed a hook'
+        assert c.word(GETTER)==0xe92d4010 and c.word(DRAW_SITE)==0xe2855001 and c.word(0xc052884c)==0xe1a03000, 'Failed allocation armed a hook'
         c=TestCamera(ordinary);c.boot();c.preset(name=b'Outdoor');c.fixture(state=0,publish=False)
         gate=RES+m['symbols']['indoor_selected']-m['symbols']['resident']
         c.put(gate,0xe3a00001,0xe12fff1e);c.mu.ctl_remove_cache(gate,gate+8)

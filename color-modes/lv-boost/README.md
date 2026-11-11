@@ -9,6 +9,8 @@ Selecting OFF or a native color preset saves LV Boost as disabled; the next
 boot leaves the native color choice alone. A manual menu selection cancels a
 pending startup restore.
 
+For the current fpSup-Merge page, use [LV Boost for Loader v4](../../custom-modes/loader-v4/).
+
 For **LV Boost alone with Fast Start 3**, download the
 [v0.6.1 Fast Start 3 test ZIP](LV-Boost-v0.6.1-FastStart3-Sigma-fp-5.02.zip)
 ([SHA-256](LV-Boost-v0.6.1-FastStart3-Sigma-fp-5.02.zip.sha256)).
@@ -36,7 +38,7 @@ It includes the complete AutoRun/BIN/FPSUPUI set and test instructions, with
 EP83 off. Its exact files passed all three emulated loading paths; physical
 camera validation is pending. This combined card is not a Merge input.
 
-## fpSup-Merge compatibility
+## Legacy single-file composer compatibility
 
 Guidance/source: [fpSup-Merge](https://github.com/ijigen/fpSup/tree/main/tools/card-composer)
 and [build contract](../../SUP_BUILD_RULES.en.md), checked against upstream
@@ -44,7 +46,7 @@ and [build contract](../../SUP_BUILD_RULES.en.md), checked against upstream
 fpSup's `tools/card-composer/`, not a separate repository.
 
 1. Extract the v0.6.1 ZIP and upload **fpSup.BIN** to
-   [fpSup-Merge](https://ijigen.github.io/fpSup/tools/card-composer/).
+   [the legacy composer](https://ijigen.github.io/fpSup/tools/card-composer/legacy/v2/).
 2. Select the other Sups you want. Add Shell there for USB diagnostics; enable
    Fast Start 2 there if wanted. Use only one gyro edition and one OpenGate.
 3. Download Merge's ZIP and use its complete `AutoRun.txt`, `fpSup.BIN`, and

@@ -6,15 +6,17 @@ flicker detection. A white **BANDING RISK** label on a red background warns when
 selected shutter becomes too fast for the compensation target, with any lens.
 This includes controlled-aperture lenses that cannot stop down far enough.
 
-[Download Indoor 0.4.3 for fpSup-Merge](Indoor-v0.4.3-Merge-Sigma-fp-5.02.zip).
+For the current fpSup-Merge page, use [Indoor 0.4.5 for Loader v4](loader-v4/).
+
+[Download Indoor 0.4.5 for the legacy single-file composer](Indoor-v0.4.5-Merge-Sigma-fp-5.02.zip).
 This is an ordinary merge input containing **only Indoor**. USB Shell, LV Boost
 and Fast Start 2 are not bundled; select them separately in Merge if wanted.
 It uses the existing BIN-upload workflow rather than a built-in catalogue tile.
 
-## Install with fpSup-Merge
+## Install with the legacy single-file composer
 
 1. Extract the ZIP and upload its **fpSup.BIN** to
-   [fpSup-Merge](https://ijigen.github.io/fpSup/tools/card-composer/), or use
+   [the legacy composer](https://ijigen.github.io/fpSup/tools/card-composer/legacy/v2/), or use
    [the local merger](../tools/card-composer/index.html).
 2. Select any other mods and enable Fast Start 2 if wanted.
 3. Download Merge's ZIP and copy its **AutoRun.txt**, **fpSup.BIN**, and
@@ -126,3 +128,9 @@ Stock-word sections let the shared loader journal and restore both runtime
 hooks and clean up the older Indoor/BF experimental hooks. No new persistent
 setting, detector-state write, task or private loader is added. Optional Fast
 Start 2 retains the shared loader's existing persistent-settings behavior.
+
+## 0.4.5 warning visibility fix
+
+The banding warning now uses the native group-3 frame submission, so it is
+visible while Indoor compensation runs. It was confirmed on camera. The
+thresholds and native Indoor50/Indoor60 compensation are unchanged.

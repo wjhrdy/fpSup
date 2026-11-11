@@ -135,7 +135,7 @@ def write_dngcm_inc():
     (HERE / 'rv_dngcm.inc').write_text('\n'.join(out) + '\n')
 
 
-def build_blob(focus_lift=True, focus_lift_default=None):
+def build_blob(focus_lift=True, focus_lift_default=None, *, loader_v4=False):
     if not focus_lift:
         raise ValueError("This builder packages only the LV Boost variant")
     if focus_lift_default is not None and (not focus_lift or focus_lift_default not in (1, 2, 3)):
@@ -172,13 +172,15 @@ def build_blob(focus_lift=True, focus_lift_default=None):
             f'STUB_ZNC=0x{rs["stub_znc"]:X}', f'STUB_ZNS=0x{rs["stub_zns"]:X}']
     launch_src = HERE / 'rv_launch.S'
     defs += variant
+    if loader_v4:
+        defs += ['LOADER_V4=1']
     if focus_lift_default is not None:
         defs += [f'FL_START=0x{rs["fl_start"]:X}']
     launch = assemble(launch_src, defs)
     ls = symbols(launch_src, defs)
     if ls['blob'] != len(launch):
         raise SystemExit(f'launcher blob label at {ls["blob"]:#x} but code is {len(launch):#x} bytes')
-    check_calls(launch, focus_lift_default is not None)
+    check_calls(launch, focus_lift_default is not None, loader_v4)
     blob = launch + res + tdata
     return blob, {'launch': len(launch), 'resident': len(res), 'tables': len(tdata),
                   'stub_gs': rs['stub_gs'], 'stub_dg': rs['stub_dg'],
@@ -190,23 +192,27 @@ def build_blob(focus_lift=True, focus_lift_default=None):
                   'stub_zc': rs['stub_zc'], 'stub_zs': rs['stub_zs'], 'stub_znc': rs['stub_znc'], 'stub_zns': rs['stub_zns']}
 
 
-def check_calls(code, startup=False):
+def check_calls(code, startup=False, loader_v4=False):
     """launcher 只能 blx 到四個允許的函式(movw/movt ip 之後的 blx ip)。"""
     import capstone
     md = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_ARM)
     lo = hi = None
+    previous = None
     for i in md.disasm(code, 0):
         if i.mnemonic == 'movw' and i.op_str.startswith('ip,'):
             lo = int(i.op_str.split('#')[1], 0)
         elif i.mnemonic == 'movt' and i.op_str.startswith('ip,'):
             hi = int(i.op_str.split('#')[1], 0)
         elif i.mnemonic == 'blx':
-            target = (hi << 16) | lo
-            allowed = ALLOWED_CALLS | ({0xC0016A58, 0xC0016BC0} if startup else set())
-            if target not in allowed:
-                raise SystemExit(f'launcher calls 0x{target:08X}, not an allowed routine')
+            service = loader_v4 and previous == ('ldr', 'ip, [r0, #0x14]')
+            if not service:
+                target = (hi << 16) | lo
+                allowed = ALLOWED_CALLS | ({0xC0016A58, 0xC0016BC0} if startup else set())
+                if target not in allowed:
+                    raise SystemExit(f'launcher calls 0x{target:08X}, not an allowed routine')
         elif i.mnemonic == 'bl':
             raise SystemExit(f'launcher has a direct bl at {i.address:#x}')
+        previous = (i.mnemonic, i.op_str)
 
 
 def main():

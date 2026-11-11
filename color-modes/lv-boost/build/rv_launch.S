@@ -165,7 +165,12 @@
 
 entry:
     push    {r4-r11, ip, lr}        @ 十個:stack 保持 8-byte 對齊
+#ifdef LOADER_V4
+    sub     sp, sp, #24
+    str     r1, [sp, #16]            @ services, beyond allocator descriptor
+#else
     sub     sp, sp, #16             @ allocator descriptor(不釋放)
+#endif
 
     /* 1. 原廠值檢查 */
     GUARD   SITE_A, ORIG_A
@@ -420,6 +425,14 @@ lv_loaded:
     bne     21b
 
     /* 6. veneer(五個,取自 cave 的 bump 配置器) */
+#ifdef LOADER_V4
+    ldr     r0, [sp, #16]
+    mov     r1, #NVEN * 8
+    ldr     ip, [r0, #20]            @ svc->cave_alloc
+    blx     ip
+    movs    r5, r0
+    beq     9f
+#else
     LDA     r7, CAVE_BUMP
     ldr     r5, [r7]                @ r5 = veneer 起點
     add     r1, r5, #NVEN * 8
@@ -427,6 +440,7 @@ lv_loaded:
     cmp     r1, r2
     bhi     9f                      @ cave 滿了:不裝(記憶體留著,重開機釋放)
     str     r1, [r7]
+#endif
     LDA     r2, VENEER_LDR
     VEN     0, STUB_GS
     VEN     1, STUB_DG
@@ -582,7 +596,12 @@ lv_loaded:
     str     r0, [r9, #0x58]        @ task start result
 #endif
 
-9:  add     sp, sp, #16
+9:
+#ifdef LOADER_V4
+    add     sp, sp, #24
+#else
+    add     sp, sp, #16
+#endif
     mov     r0, #0
     pop     {r4-r11, ip, pc}
 

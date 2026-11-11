@@ -8,8 +8,8 @@
 
 [English](#english) | [繁體中文](#繁體中文) · **[→ ijigen.github.io/fpSup](https://ijigen.github.io/fpSup/)**
 
-Everything here runs from an `AutoRun.txt` on the SD card, in RAM only. Remove the
-file, power-cycle, and the camera is stock. **Nothing is ever written to flash.**
+The SD card starts the tools through `AutoRun.txt`. Fast Start can store loader
+bytes in persistent camera settings, and LV Boost retains its saved preference.
 **Firmware Ver.5.02 only** — a card built for one version writes into whatever
 happens to be at those addresses on another.
 
@@ -22,13 +22,13 @@ happens to be at those addresses on another.
 **[ijigen.github.io/fpSup](https://ijigen.github.io/fpSup/)** — the tools, the
 releases and the reference, in one page.
 
-**[fpSup-Merge](https://ijigen.github.io/fpSup/tools/card-composer/)** — pick the
-products you want on one card and get `AutoRun.txt` and `fpSup.BIN`. Merged cards are
-produced here and nowhere else, and every combination is checked against the same
-rules the build scripts use. Runs in the browser — no toolchain, no camera.
+**[fpSup-Merge](https://ijigen.github.io/fpSup/tools/card-composer/)** — pick
+Loader v4 modules and download `AutoRun.txt` and an `fpSup/` folder. The legacy
+composer is needed for older single-file `fpSup.BIN` uploads.
 
-**[Custom modes](custom-modes/)** — Indoor: a saved P preset with 60 Hz lighting
-compensation, installable through fpSup-Merge BIN upload (experimental).
+**[Indoor + LV Boost for Loader v4](custom-modes/loader-v4/)** — choose the
+individual Merge uploads or a ready-to-use card with Fast Start. Indoor supports
+50 and 60 Hz; LV Boost brightens the STILL preview.
 
 ### Releases
 
@@ -137,9 +137,11 @@ Each page says what has been proven, what is being worked on, and what is open.
 
 **[ijigen.github.io/fpSup](https://ijigen.github.io/fpSup/)** —— 工具、釋出版、參考資料都在一頁。
 
-**[fpSup-Merge](https://ijigen.github.io/fpSup/tools/card-composer/)** —— 勾選要的產品,
-產生 `AutoRun.txt` 與 `fpSup.BIN`。**合併版只在這裡產生**,而且每個組合都用建置腳本
-同一套規則檢查過。在瀏覽器裡跑 —— 不用工具鏈,不用相機。
+**[fpSup-Merge](https://ijigen.github.io/fpSup/tools/card-composer/)** —— 勾選 Loader v4 模組，
+下載 `AutoRun.txt` 與 `fpSup/` 資料夾。舊版單一 `fpSup.BIN` 請使用舊版合併器。
+
+**[Indoor + LV Boost（Loader v4）](custom-modes/loader-v4/)** —— 提供可上傳至合併器的
+個別模組，以及已啟用 Fast Start 的合併卡。
 
 ### 釋出版
 
